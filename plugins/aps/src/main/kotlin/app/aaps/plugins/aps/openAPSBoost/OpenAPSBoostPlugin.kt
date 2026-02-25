@@ -613,7 +613,7 @@ open class OpenAPSBoostPlugin @Inject constructor(
             low_temptarget_lowers_sensitivity = preferences.get(BooleanKey.ApsAutoIsfLowTtLowersSens),
             sensitivity_raises_target = true,
             resistance_lowers_target = true,
-            adv_target_adjustments = SMBDefaults.adv_target_adjustments,
+            adv_target_adjustments = true,
             exercise_mode = SMBDefaults.exercise_mode,
             half_basal_exercise_target = SMBDefaults.half_basal_exercise_target,
             maxCOB = SMBDefaults.maxCOB,
