@@ -96,6 +96,8 @@
     <!-- Boost BG Source Safety -->
     <string name="boost_allow_all_bg_sources_title">Allow all BG sources for SMBs</string>
     <string name="boost_allow_all_bg_sources_summary">Bypass advanced filtering check. WARNING: Only use with reliable CGM data</string>
+    <string name="boost_bypass_version_check_title">Bypass version expiry check</string>
+    <string name="boost_bypass_version_check_summary">Prevent AAPS from disabling closed loop when the version expires. WARNING: You assume responsibility for running an older version</string>
 
     <!-- Boost Night Mode -->
     <string name="boost_night_mode_title">Night Mode</string>

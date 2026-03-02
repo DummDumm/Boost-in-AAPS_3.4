@@ -74,6 +74,7 @@ enum class BooleanKey(
     ApsBoostNightModeEnabled("boost_night_mode_enabled", false, defaultedBySM = true),
     ApsBoostNightModeDisableWithCob("boost_night_mode_disable_with_cob", false, defaultedBySM = true),
     ApsBoostNightModeDisableWithLowTt("boost_night_mode_disable_with_low_tt", false, defaultedBySM = true),
+    ApsBoostBypassVersionCheck("boost_bypass_version_check", false, defaultedBySM = true),
 
     MaintenanceEnableFabric("enable_fabric2", true, defaultedBySM = true, hideParentScreenIfHidden = true),
 

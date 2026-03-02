@@ -929,6 +929,9 @@ open class OpenAPSBoostPlugin @Inject constructor(
             // BG source safety
             addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsBoostAllowAllBgSources, summary = R.string.boost_allow_all_bg_sources_summary, title = R.string.boost_allow_all_bg_sources_title))
 
+            // Version check bypass
+            addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsBoostBypassVersionCheck, summary = R.string.boost_bypass_version_check_summary, title = R.string.boost_bypass_version_check_title))
+
             // Advanced settings sub-screen
             addPreference(preferenceManager.createPreferenceScreen(context).apply {
                 key = "absorption_smb_advanced"
