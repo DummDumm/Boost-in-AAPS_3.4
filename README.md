@@ -19,6 +19,25 @@ This release also includes a **new Boost Overview UI** — a redesigned home scr
 
 ## What's new in this release?
 
+### Fast-Carb Rebound Protection
+
+When fast-acting carbohydrates are eaten to treat a low (a rescue carb event), the subsequent glucose rise can look identical to an unannounced meal from the algorithm's perspective — rapid rise, no COB entry, high UAM boost factors. Without a logged carb entry, Boost would previously fire its aggressive UAM and acceleration tiers during this recovery, risking insulin stacking onto what is actually a carb-driven rebound.
+
+This release adds fast-carb rebound detection to both Boost and Boost V2. Each loop cycle, AAPS computes the minimum CGM reading over the last 60 minutes (`recentLowBG`) and passes it to the dosing algorithm. If the following conditions are all true simultaneously, the algorithm concludes a fast-carb rescue rebound is in progress:
+
+- `recentLowBG` was below 72 mg/dL (a genuine low within the last hour)
+- No carbs are currently logged (`mealCOB = 0`)
+- Current BG is below 170 mg/dL (still in the recovery zone, not a true hyperglycaemic rise)
+- Current glucose delta is above 5 mg/dL/5min (actively rising)
+
+When this pattern is detected, **Tier 3 (UAM Boost), Tier 5 (Percent Scale), and Tier 6 (Acceleration Bolus)** are bypassed. The algorithm falls through to **Tier 7 (Enhanced oref1)** instead, which provides a modest proportional response appropriate for a recovering glucose rather than an aggressive boost.
+
+**What this means in practice:** after treating a low without logging the carbs, the algorithm will still deliver insulin if the glucose rises above target — it just won't multiply it up using the UAM/acceleration logic that was calibrated for unannounced meals from a normal baseline. Once BG has been above 72 mg/dL for a full 60 minutes, `recentLowBG` will rise above the threshold and normal boost behaviour resumes automatically.
+
+This protection applies to both the **Boost** and **Boost V2** plugins.
+
+---
+
 ### Boostv2 Plugin using DynISF V2
 
 **Important:** When starting with DynISF V2 — set the **TDD adjustment factor to 100%** as your starting point. This gives you the unmodified formula output. Adjust up or down from there based on your results. Do not carry over your V1 adjustment factor, as the squared TDD term means the same percentage has a much larger effect in V2 (so if your value is below 100%, it produces significantly larger ISF values).
