@@ -36,9 +36,13 @@ When this pattern is detected, **Tier 3 (UAM Boost), Tier 5 (Percent Scale), and
 
 **How the detection works:**
 
-The two signals work together. `recentLowBG < 100` confirms the glucose was recently in low-normal territory (the typical pre-treatment state), and `delta_accl > 25` confirms the current rise is sharply accelerating — the pattern seen when fast-acting carbs kick in. Using `delta_accl` rather than a raw delta threshold means the signal is relative to recent glucose trend, making it robust to different baseline rates of change.
+Two signals are used — either is sufficient, with `delta_accl > 25` and `COB = 0` required in both cases:
 
-This combination was validated against a labelled dataset of 21 events (12 fast-carb, 9 meal): it correctly identified 10/12 fast-carb rebound events. The 2 missed events were fast carbs eaten from an already-elevated BG (126–141 mg/dL), where UAM dosing is appropriate. The 3 false positives were all unlogged meals — cases the algorithm cannot distinguish from a fast-carb rebound, but where the clinical consequence (Tier 7 giving a modest dose instead of Tier 3) is lower-risk than the converse.
+- **`recentLowBG < 100 mg/dL`** — BG was in low-normal territory within the last 60 minutes (the typical pre-treatment state). This covers the common scenario of eating fast carbs to treat or prevent a low.
+
+- **`reversalScore > 30`** — computed as `delta × |longAvgDelta|` when `longAvgDelta < 0` and `delta > 0`. This captures fast carbs eaten from a falling high BG where the long-term average still reflects the preceding fall — even if BG never dropped below 100 mg/dL. When the long average is essentially flat (±2 mg/dL), the score equals approximately `delta × 2`, requiring a delta above 15 mg/dL/5min to fire — appropriately conservative for a near-flat trend.
+
+This combination was validated against a labelled dataset of 21 events (12 fast-carb, 9 meal): it correctly identified 12/12 fast-carb events (with corrected per-cycle lookback). The 3–4 false positives were all unlogged meals eaten after a low — cases the algorithm cannot distinguish from fast-carb rebounds, but where the clinical consequence (Tier 7 giving a modest dose instead of Tier 3) is lower-risk than the alternative.
 
 This protection applies to both the **Boost** and **Boost V2** plugins.
 

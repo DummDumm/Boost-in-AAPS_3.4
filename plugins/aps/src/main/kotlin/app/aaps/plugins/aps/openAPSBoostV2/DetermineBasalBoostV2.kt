@@ -1081,19 +1081,30 @@ class DetermineBasalBoostV2 @Inject constructor(
                 // UAM/Acceleration tiers would fire aggressively here (uamBoost2 inflated by
                 // the recent fall), risking insulin stacking onto an unannounced carb rise.
                 // Suppress Tiers 3, 5, 6 and let Tier 7 (mild) handle it instead.
-                // Detection: BG was in low-normal range recently (< 100 mg/dL in last 60 min)
-                // AND current acceleration (delta_accl > 25) confirms a sharp rise — consistent
-                // with fast-carb absorption pattern regardless of whether a hypo occurred.
-                // Validated against note-analysis dataset: 10/12 fast-carb recall, 3/9 meal FPs
-                // (all 3 FPs were unlogged meals, clinically lower-risk than over-dosing a rebound).
-                val lowTriggered = profile.recentLowBG < 100.0
-                val fastCarbRebound = lowTriggered
+                // Two detection signals, either sufficient (COB=0, delta_accl>25 required for both):
+                // 1. recentLowBG < 100: BG was in low-normal range within the last 60 min —
+                //    covers fast carbs eaten from or near target (the common treatment scenario).
+                // 2. reversalScore > 30: delta × |longAvgDelta| when longAvgDelta<0 and delta>0 —
+                //    captures fast carbs eaten from a falling high BG where the long average still
+                //    reflects the preceding fall. Fires even if BG never dropped below 100.
+                //    With flat longAvgDelta (±2 mg/dL) reversalScore ≈ delta×2, so requires
+                //    delta > 15 to exceed threshold — appropriately conservative.
+                // Validated: 12/12 fast-carb recall (corrected lookback), 3–4 meal FPs (unlogged).
+                val lowTriggered      = profile.recentLowBG < 100.0
+                val reversalScore     = if (glucose_status.longAvgDelta < 0 && glucose_status.delta > 0)
+                    glucose_status.delta * Math.abs(glucose_status.longAvgDelta) else 0.0
+                val reversalTriggered = reversalScore > 30.0
+                val fastCarbRebound   = (lowTriggered || reversalTriggered)
                     && meal_data.mealCOB == 0.0
                     && bg < 170.0
                     && delta_accl > 25.0
                 if (fastCarbRebound) {
-                    val trigger = "low ${round(profile.recentLowBG, 0)} accl ${round(delta_accl, 1)}"
-                    consoleError.add("Fast-carb rebound detected ($trigger): BG=$bg — UAM/Accel boost suppressed")
+                    val trigger = when {
+                        lowTriggered && reversalTriggered -> "low ${round(profile.recentLowBG, 0)} rev ${round(reversalScore, 0)}"
+                        lowTriggered      -> "low ${round(profile.recentLowBG, 0)}"
+                        else              -> "rev ${round(reversalScore, 0)}"
+                    }
+                    consoleError.add("Fast-carb rebound detected ($trigger, accl ${round(delta_accl, 1)}): BG=$bg — UAM/Accel boost suppressed")
                     rT.reason.append("Fast-carb rebound ($trigger→$bg): boost suppressed; ")
                 }
 
