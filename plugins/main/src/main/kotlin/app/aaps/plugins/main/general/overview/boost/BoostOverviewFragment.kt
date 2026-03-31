@@ -649,10 +649,14 @@ class BoostOverviewFragment : DaggerFragment(), View.OnClickListener, View.OnLon
             val maxReading = pump.pumpDescription.maxResorvoirReading.toDouble()
             if (pump.pumpDescription.isPatchPump && res >= maxReading) {
                 binding.pumpReservoir.text = "${decimalFormatter.to0Decimal(maxReading)}+U"
+                binding.pumpReservoir.setTextColor(rh.gac(context, app.aaps.core.ui.R.attr.defaultTextColor))
             } else if (res > 0) {
                 binding.pumpReservoir.text = "${decimalFormatter.to0Decimal(res)}U"
+                warnColors.setColorInverse(binding.pumpReservoir, res,
+                    preferences.get(IntKey.OverviewResWarning), preferences.get(IntKey.OverviewResCritical))
             } else {
                 binding.pumpReservoir.text = "---"
+                binding.pumpReservoir.setTextColor(rh.gac(context, app.aaps.core.ui.R.attr.defaultTextColor))
             }
             val bat = pump.batteryLevel
             binding.pumpBattery.text = if (bat != null) "\uD83D\uDD0B ${bat}%" else "\uD83D\uDD0B ---"
