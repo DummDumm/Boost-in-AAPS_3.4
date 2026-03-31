@@ -704,6 +704,26 @@ canvas {
           <div class="smb-unit">U (capped by maxBolus &amp; bolusMax)</div>
         </div>
       </div>
+      <div id="out-percent-scale-row" style="display:none; margin-top:10px;">
+        <div style="background:#0f1117; border:1px solid #7c3aed; border-radius:8px; padding:10px 14px;">
+          <div style="font-size:0.72rem; font-weight:700; color:#a78bfa; margin-bottom:6px;">Percent Scaling Effect</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+            <div>
+              <div style="font-size:0.65rem; color:#64748b; margin-bottom:3px;">Without scaling</div>
+              <div style="font-size:1rem; font-weight:700; color:#94a3b8;" id="out-ps-unscaled">—</div>
+            </div>
+            <div>
+              <div style="font-size:0.65rem; color:#64748b; margin-bottom:3px;">With scaling</div>
+              <div style="font-size:1rem; font-weight:700; color:#a78bfa;" id="out-ps-scaled">—</div>
+            </div>
+            <div>
+              <div style="font-size:0.65rem; color:#64748b; margin-bottom:3px;">Difference</div>
+              <div style="font-size:1rem; font-weight:700;" id="out-ps-diff">—</div>
+            </div>
+          </div>
+          <div style="font-size:0.7rem; color:#64748b; margin-top:6px;" id="out-ps-note"></div>
+        </div>
+      </div>
 
       <div style="margin-top:14px; padding:10px 14px; background:#0f1117; border:1px solid #2d3748; border-radius:8px; font-size:0.75rem; color:#94a3b8; line-height:1.7;" id="out-smb-breakdown">
         —
@@ -1010,6 +1030,7 @@ function calcAll(inp) {
   const ioBlock          = inp.iob > inp.maxIob;
   const boostDisabledScale = inp.scale >= 3.0;
   let rawMicroBolus = Math.max(0, Math.min(insulinReqV1 / scaledDivisor, maxBasalBolus, inp.bolusMax));
+  const rawMicroBolusUnscaled = Math.max(0, Math.min(insulinReqV1 / baseReqDivisor, maxBasalBolus, inp.bolusMax));
   const blocked = ioBlock || boostDisabledScale || nightSuppressed;
   const microBolus = blocked ? 0 : Math.floor(rawMicroBolus * 20) / 20;
 
@@ -1020,7 +1041,7 @@ function calcAll(inp) {
     scaledProfileIsf, sensNTV1, sensNTV2,
     isfV1, isfV2, bgCapped,
     smbMinToUse, maxBasalBolus,
-    insulinReqV1, scaledDivisor, baseReqDivisor, rawMicroBolus, microBolus,
+    insulinReqV1, scaledDivisor, baseReqDivisor, rawMicroBolus, rawMicroBolusUnscaled, microBolus,
     ioBlock, boostDisabledScale, nightSuppressed,
     ttRatioApplied, circFactor,
     aggScore,
@@ -1164,6 +1185,37 @@ function update() {
     smbBreak += `Final (min of above, rounded to 0.05U): ${fmt(r.microBolus,2)} U`;
   }
   document.getElementById('out-smb-breakdown').textContent = smbBreak;
+
+  // Percent Scaling comparison row
+  const psRow = document.getElementById('out-percent-scale-row');
+  if (inp.percentScale && !r.boostDisabledScale && !r.ioBlock && !r.nightSuppressed) {
+    psRow.style.display = 'block';
+    const unscaled = r.rawMicroBolusUnscaled;
+    const scaled   = r.rawMicroBolus;
+    const diff     = scaled - unscaled;
+    document.getElementById('out-ps-unscaled').textContent = fmt(unscaled, 3) + ' U';
+    document.getElementById('out-ps-scaled').textContent   = fmt(scaled,   3) + ' U';
+    const diffEl = document.getElementById('out-ps-diff');
+    if (Math.abs(diff) < 0.001) {
+      diffEl.style.color = '#64748b';
+      diffEl.textContent = '0 U (same)';
+    } else if (diff > 0) {
+      diffEl.style.color = '#6ee7b7';
+      diffEl.textContent = '+' + fmt(diff, 3) + ' U';
+    } else {
+      diffEl.style.color = '#f87171';
+      diffEl.textContent = fmt(diff, 3) + ' U';
+    }
+    const noteEl = document.getElementById('out-ps-note');
+    if (Math.abs(diff) < 0.001) {
+      const cap = Math.min(r.maxBasalBolus, inp.bolusMax);
+      noteEl.textContent = `Both paths hit the same cap (${fmt(cap,3)} U). To see scaling take effect, raise uamSmbMin (currently ${inp.uamSmbMin}m) or increase Basal Rate so maxBasalBolus > insulinReq÷divisor.`;
+    } else {
+      noteEl.textContent = `Percent Scaling is ${diff > 0 ? 'increasing' : 'decreasing'} the microbolus by ${fmt(Math.abs(diff),3)} U at BG ${inp.bg}. scaledDivisor=${fmt(r.scaledDivisor,3)} vs base=${fmt(r.baseReqDivisor,3)}.`;
+    }
+  } else {
+    psRow.style.display = 'none';
+  }
 
   // Aggressiveness gauge
   const pct = (r.aggScore * 100).toFixed(1);
